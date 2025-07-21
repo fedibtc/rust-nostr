@@ -681,7 +681,14 @@ impl InnerRelay {
             // Message sender handler
             res = self.sender_message_handler(&mut ws_tx, rx_nostr, &ping) => match res {
                 Ok(()) => tracing::trace!(url = %self.url, "Relay sender exited."),
-                Err(e) => tracing::error!(url = %self.url, error = %e, "Relay sender exited with error.")
+                Err(e) => {
+                    tracing::error!(url = %self.url, error = %e, "Relay sender exited with error.");
+
+                    // Immediately return.
+                    // This avoids sending the WebSocket close msg, which may cause issues in some contexts
+                    // Issue: https://github.com/rust-nostr/nostr/issues/984
+                    return;
+                }
             },
             // Message receiver handler
             res = self.receiver_message_handler(ws_rx, &ping, ingester_tx) => match res {
